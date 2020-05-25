@@ -30,6 +30,7 @@ import com.olkoro.demo.signature.FileSigner;
 import com.olkoro.demo.signature.TestSigningData;
 import eu.europa.esig.dss.DSSUtils;
 import eu.europa.esig.dss.DigestAlgorithm;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.xalan.xsltc.dom.SimpleResultTreeImpl;
 import org.digidoc4j.Container;
@@ -42,14 +43,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.xml.bind.DatatypeConverter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -151,6 +156,7 @@ public class SigningController {
 
             signer.signContainer(container, dataToSign, signatureInHex);
             //session.setContainer(container);
+            container.saveAsFile("file.bdoc");
             return Result.resultOk();
         } catch (Exception e) {
             log.error("Error Signing document", e);
@@ -162,6 +168,5 @@ public class SigningController {
         DataFile file = new DataFile(data.getBytes(), name, "text/plain");
         return file;
     }
-
 
 }
