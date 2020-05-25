@@ -41,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.xml.bind.DatatypeConverter;
 import java.io.File;
@@ -60,20 +61,19 @@ public class SigningController {
     private FileSigner signer;
 
     @RequestMapping(value="/upload", method= RequestMethod.POST)
-    public Result handleUpload(HttpSession httpSession, @RequestParam MultipartFile file) {
-        log.debug("Handling file upload for file "+file.getOriginalFilename());
-        System.out.println(httpSession.getId());
+    public Result handleUpload(@RequestParam MultipartFile file) {
+        System.out.println("Handling file upload for file "+file.getOriginalFilename());
         try {
             byte[] fileBytes = file.getBytes();
             String fileName = file.getOriginalFilename();
             String mimeType = file.getContentType();
             DataFile dataFile = new DataFile(fileBytes, fileName, mimeType);
 
-            multipartFileToFile(file, Paths.get("."));
+            multipartFileToFile(file, Paths.get("C:\\Users\\Laptop\\Downloads\\demo\\demo"));
 
             Container container = signer.createContainer(dataFile);
+
             session.setContainer(container);
-            System.out.println("session.container " + session.getContainer());
             return Result.resultOk();
         } catch (IOException e) {
             log.error("Error reading bytes from uploaded file " + file.getOriginalFilename(), e);
@@ -85,29 +85,31 @@ public class SigningController {
             MultipartFile multipart,
             Path dir
     ) throws IOException {
-        System.out.println("path"+dir);
+        System.out.println("NB! path"+dir);
         Path filepath = Paths.get(dir.toString(), multipart.getOriginalFilename());
-        multipart.transferTo(filepath);
+        multipart.transferTo(new File(String.valueOf(filepath)));
     }
 
     @RequestMapping(value="/generateHash", method = RequestMethod.POST)
     public Digest generateHash(@RequestParam String certInHex) {
-        log.debug("Generating hash from cert " + StringUtils.left(certInHex, 10) + "...");
+
+        System.out.println("Generating hash from cert " + StringUtils.left(certInHex, 10) + "...");
+        System.out.println("NB! /generateHash");
+        System.out.println("NB! certInHex "+ certInHex);
         Container container = session.getContainer();
-        System.out.println("session.container /generateHash " + container);
-        if (container == null) {
-            //Create a container with a text file to be signed
-            container = ContainerBuilder.
-                    aContainer().
-                    withDataFile("doc.txt", "text/plain").
-                    build();
-        }
+
+        container = ContainerBuilder.
+                aContainer().
+                withDataFile("doc.txt", "text/plain").
+                build();
+
         Digest digest = new Digest();
         try {
             DataToSign dataToSign = signer.getDataToSign(container, certInHex);
             session.setDataToSign(dataToSign);
             String dataToSignInHex =
                     DatatypeConverter.printHexBinary(DSSUtils.digest(DigestAlgorithm.SHA256, dataToSign.getDataToSign()));
+            System.out.println("NB! dataToSignInHex "+dataToSignInHex);
             digest.setHex(dataToSignInHex);
             digest.setResult(Result.OK);
         } catch (Exception e) {
@@ -117,31 +119,29 @@ public class SigningController {
         return digest;
     }
 
-    @ModelAttribute("signingSessionData")
-    public SigningSessionData populateSigningSessionData() {
-        return new SigningSessionData();
-    }
-
     @RequestMapping(value="/createContainer", method = RequestMethod.POST)
     public Result createContainer(@RequestParam String signatureInHex, @RequestParam String certInHex) {
-        log.debug("Creating container for signature " + StringUtils.left(signatureInHex, 10) + "...");
+
+        System.out.println("Creating container for signature " + StringUtils.left(signatureInHex, 10) + "...");
+        System.out.println("NB! /createContainer");
+        System.out.println("NB! signatureInHex "+signatureInHex);
+        System.out.println("NB! certInHex "+certInHex);
         DataToSign dataToSign = session.getDataToSign();
         try {
             Container container = session.getContainer();
 
-            if (container == null) {
-                //Create a container with a text file to be signed
-                container = ContainerBuilder.
-                        aContainer().
-                        withDataFile("doc.txt", "text/plain").
-                        build();
-            }
-            if (dataToSign == null) {
-                dataToSign = signer.getDataToSign(container, certInHex);
-            }
+            container = ContainerBuilder.
+                    aContainer().
+                    withDataFile("doc.txt", "text/plain").
+                    build();
+            dataToSign = signer.getDataToSign(container, certInHex);
+
+            String dataToSignInHex =
+                    DatatypeConverter.printHexBinary(DSSUtils.digest(DigestAlgorithm.SHA256, dataToSign.getDataToSign()));
+            System.out.println("NB! dataToSignInHex "+dataToSignInHex);
 
             signer.signContainer(container, dataToSign, signatureInHex);
-            session.setContainer(container);
+            //session.setContainer(container);
             return Result.resultOk();
         } catch (Exception e) {
             log.error("Error Signing document", e);
