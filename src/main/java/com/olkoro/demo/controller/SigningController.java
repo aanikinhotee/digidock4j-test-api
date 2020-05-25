@@ -27,6 +27,7 @@ import com.olkoro.demo.model.Digest;
 import com.olkoro.demo.model.Result;
 import com.olkoro.demo.model.SigningSessionData;
 import com.olkoro.demo.signature.FileSigner;
+import com.olkoro.demo.signature.TestSigningData;
 import eu.europa.esig.dss.DSSUtils;
 import eu.europa.esig.dss.DigestAlgorithm;
 import org.apache.commons.lang3.StringUtils;
@@ -140,6 +141,14 @@ public class SigningController {
                     DatatypeConverter.printHexBinary(DSSUtils.digest(DigestAlgorithm.SHA256, dataToSign.getDataToSign()));
             System.out.println("NB! dataToSignInHex "+dataToSignInHex);
 
+            //test values
+            DataFile file = createFile("test.txt", "Test data to sign");
+            String certificateInHex = TestSigningData.getSigningCertificateInHex("EC");
+            container = signer.createContainer(file);
+            dataToSign = signer.getDataToSign(container, certificateInHex);
+            byte[] data = dataToSign.getDataToSign();
+            signatureInHex = TestSigningData.signData(data, org.digidoc4j.DigestAlgorithm.SHA256, "EC");
+
             signer.signContainer(container, dataToSign, signatureInHex);
             //session.setContainer(container);
             return Result.resultOk();
@@ -148,5 +157,11 @@ public class SigningController {
         }
         return Result.resultSigningError();
     }
+
+    private DataFile createFile(String name, String data) {
+        DataFile file = new DataFile(data.getBytes(), name, "text/plain");
+        return file;
+    }
+
 
 }
