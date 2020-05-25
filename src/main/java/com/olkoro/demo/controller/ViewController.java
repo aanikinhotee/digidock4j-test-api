@@ -26,6 +26,8 @@ package com.olkoro.demo.controller;
 import com.olkoro.demo.model.SigningSessionData;
 import org.apache.commons.io.IOUtils;
 import org.digidoc4j.Container;
+import org.digidoc4j.ContainerBuilder;
+import org.digidoc4j.DataFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +55,10 @@ public class ViewController {
     @RequestMapping("/downloadContainer")
     public void downloadContainer(HttpServletResponse response) {
         Container container = session.getContainer();
+        container = ContainerBuilder.
+                aContainer().
+                withDataFile("file.bdoc", CONTAINER_MIME_TYPE).
+                build();
         String fileName = container.getDataFiles().get(0).getName() + ".bdoc";
         response.setContentType(CONTAINER_MIME_TYPE);
         response.setHeader("Content-Disposition", "attachment; filename=" + fileName);
