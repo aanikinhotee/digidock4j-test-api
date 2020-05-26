@@ -26,8 +26,6 @@ package com.olkoro.demo.controller;
 import com.olkoro.demo.model.SigningSessionData;
 import org.apache.commons.io.IOUtils;
 import org.digidoc4j.Container;
-import org.digidoc4j.ContainerBuilder;
-import org.digidoc4j.DataFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +34,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -53,12 +52,9 @@ public class ViewController {
     }
 
     @RequestMapping("/downloadContainer")
-    public void downloadContainer(HttpServletResponse response) {
+    public void downloadContainer(HttpSession httpSession, HttpServletResponse response) {
         Container container = session.getContainer();
-        container = ContainerBuilder.
-                aContainer().
-                withDataFile("file.bdoc", CONTAINER_MIME_TYPE).
-                build();
+        container = (Container) httpSession.getAttribute("container");
         String fileName = container.getDataFiles().get(0).getName() + ".bdoc";
         response.setContentType(CONTAINER_MIME_TYPE);
         response.setHeader("Content-Disposition", "attachment; filename=" + fileName);

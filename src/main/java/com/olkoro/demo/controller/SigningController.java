@@ -67,7 +67,7 @@ public class SigningController {
     private FileSigner signer;
 
     @RequestMapping(value="/upload", method= RequestMethod.POST)
-    public Result handleUpload(@RequestParam MultipartFile file) {
+    public Result handleUpload(HttpSession httpSession, @RequestParam MultipartFile file) {
         System.out.println("Handling file upload for file "+file.getOriginalFilename());
         try {
             byte[] fileBytes = file.getBytes();
@@ -80,6 +80,7 @@ public class SigningController {
             Container container = signer.createContainer(dataFile);
 
             session.setContainer(container);
+            httpSession.setAttribute("container", container);
             return Result.resultOk();
         } catch (IOException e) {
             log.error("Error reading bytes from uploaded file " + file.getOriginalFilename(), e);
@@ -97,22 +98,23 @@ public class SigningController {
     }
 
     @RequestMapping(value="/generateHash", method = RequestMethod.POST)
-    public Digest generateHash(@RequestParam String certInHex) {
-
+    public Digest generateHash(HttpSession httpSession, @RequestParam String certInHex) {
         System.out.println("Generating hash from cert " + StringUtils.left(certInHex, 10) + "...");
         System.out.println("NB! /generateHash");
         System.out.println("NB! certInHex "+ certInHex);
         Container container = session.getContainer();
+        container = (Container) httpSession.getAttribute("container");
 
-        container = ContainerBuilder.
-                aContainer().
-                withDataFile("doc.txt", "text/plain").
-                build();
+//        container = ContainerBuilder.
+//                aContainer().
+//                withDataFile("doc.txt", "text/plain").
+//                build();
 
         Digest digest = new Digest();
         try {
             DataToSign dataToSign = signer.getDataToSign(container, certInHex);
             session.setDataToSign(dataToSign);
+            httpSession.setAttribute("dataToSign", dataToSign);
             String dataToSignInHex =
                     DatatypeConverter.printHexBinary(DSSUtils.digest(DigestAlgorithm.SHA256, dataToSign.getDataToSign()));
             System.out.println("NB! dataToSignInHex "+dataToSignInHex);
@@ -126,36 +128,37 @@ public class SigningController {
     }
 
     @RequestMapping(value="/createContainer", method = RequestMethod.POST)
-    public Result createContainer(@RequestParam String signatureInHex, @RequestParam String certInHex) {
-
+    public Result createContainer(HttpSession httpSession, @RequestParam String signatureInHex, @RequestParam String certInHex) {
         System.out.println("Creating container for signature " + StringUtils.left(signatureInHex, 10) + "...");
         System.out.println("NB! /createContainer");
         System.out.println("NB! signatureInHex "+signatureInHex);
         System.out.println("NB! certInHex "+certInHex);
         DataToSign dataToSign = session.getDataToSign();
+        dataToSign = (DataToSign) httpSession.getAttribute("dataToSign");
         try {
             Container container = session.getContainer();
+            container = (Container) httpSession.getAttribute("container");
 
-            container = ContainerBuilder.
-                    aContainer().
-                    withDataFile("doc.txt", "text/plain").
-                    build();
-            dataToSign = signer.getDataToSign(container, certInHex);
+//            container = ContainerBuilder.
+//                    aContainer().
+//                    withDataFile("doc.txt", "text/plain").
+//                    build();
+//            dataToSign = signer.getDataToSign(container, certInHex);
 
             String dataToSignInHex =
                     DatatypeConverter.printHexBinary(DSSUtils.digest(DigestAlgorithm.SHA256, dataToSign.getDataToSign()));
             System.out.println("NB! dataToSignInHex "+dataToSignInHex);
 
             //test values
-//            DataFile file = createFile("test.txt", "Test data to sign");
-//            String certInHex = TestSigningData.getSigningCertificateInHex("EC");
+//            DataFile file = createFile("sign.txt", "sign");
+//            certInHex = TestSigningData.getSigningCertificateInHex("EC");
 //            container = signer.createContainer(file);
 //            dataToSign = signer.getDataToSign(container, certInHex);
 //            byte[] data = dataToSign.getDataToSign();
 //            signatureInHex = TestSigningData.signData(data, org.digidoc4j.DigestAlgorithm.SHA256, "EC");
 
             signer.signContainer(container, dataToSign, signatureInHex);
-            //session.setContainer(container);
+            session.setContainer(container);
             container.saveAsFile("file.bdoc");
             return Result.resultOk();
         } catch (Exception e) {
