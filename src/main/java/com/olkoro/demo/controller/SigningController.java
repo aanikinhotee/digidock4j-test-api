@@ -147,10 +147,10 @@ public class SigningController {
             System.out.println("NB! dataToSignInHex "+dataToSignInHex);
 
             //test values
-            DataFile file = createFile("test.txt", "Test data to sign");
+//            DataFile file = createFile("test.txt", "Test data to sign");
 //            String certInHex = TestSigningData.getSigningCertificateInHex("EC");
-            container = signer.createContainer(file);
-            dataToSign = signer.getDataToSign(container, certInHex);
+//            container = signer.createContainer(file);
+//            dataToSign = signer.getDataToSign(container, certInHex);
 //            byte[] data = dataToSign.getDataToSign();
 //            signatureInHex = TestSigningData.signData(data, org.digidoc4j.DigestAlgorithm.SHA256, "EC");
 
